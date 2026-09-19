@@ -13,3 +13,10 @@ Internal operations dashboard built using Python and Streamlit to monitor packin
 - Python 3.14
 - Streamlit
 - Flat-file JSON data storage
+## Interface Preview
+
+### Shift Calculator & Break Logic
+![Shift Workspace](shift-workspace.jpeg.jpg)
+
+### Performance Ledger Archive
+![Weekly Archive](archive-ledger.jpeg.jpg)
