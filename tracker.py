@@ -63,21 +63,14 @@ with st.sidebar:
 # =================================================================
 
 def load_secure_database():
-    default_db = {
-        23: {
-            "Sunday": {"date": "05/07/2026", "score": 6.32, "stages": []},
-            "Monday": {"date": "06/07/2026", "score": 6.45, "stages": []},
-            "Tuesday": {"date": "07/07/2026", "score": 6.13, "stages": []}
-        }
-    }
     if not os.path.exists(DB_FILE):
-        return default_db
+        return {}
     try:
         with open(DB_FILE, "r") as f:
             data = json.load(f)
             return {int(k): v for k, v in data.items()}
-    except:
-        return default_db
+    except Exception:
+        return {}
 
 def save_secure_database(db_data):
     try:
