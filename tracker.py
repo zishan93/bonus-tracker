@@ -1,11 +1,66 @@
 import streamlit as st
 from datetime import datetime, timedelta
-import streamlit as st
-from datetime import datetime, timedelta
 import json
 import os
 
-DB_FILE = "warehouse_db.json"
+# =================================================================
+# 0. SECURITY GATE & REMOTE KILL SWITCH
+# =================================================================
+st.set_page_config(page_title="Next Elmsall Automated Ledger", layout="wide")
+
+# Check Remote Kill Switch safely
+try:
+    app_enabled = st.secrets.get("APP_ENABLED", True)
+except Exception:
+    app_enabled = True
+
+if not app_enabled:
+    st.error("⚠️ Maintenance Mode")
+    st.warning("The application is temporarily offline. Please contact the administrator.")
+    st.stop()
+
+# Load User Accounts safely from Secrets
+try:
+    user_accounts = st.secrets.get("USERS", {
+        "admin": "admin123",
+        "demo": "demo123"
+    })
+except Exception:
+    user_accounts = {
+        "admin": "admin123",
+        "demo": "demo123"
+    }
+
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    st.markdown("### 🔒 Next Elmsall Automated Ledger — Login")
+    username_input = st.text_input("Username").strip().lower()
+    password_input = st.text_input("Password", type="password")
+    
+    if st.button("Log In", use_container_width=True):
+        if username_input in user_accounts and user_accounts[username_input] == password_input:
+            st.session_state.authenticated = True
+            st.session_state.current_user = username_input
+            st.rerun()
+        else:
+            st.error("Invalid username or password. Please try again.")
+    st.stop()
+
+# Isolate database per username
+current_user = st.session_state.get("current_user", "default")
+DB_FILE = f"warehouse_db_{current_user}.json"
+
+with st.sidebar:
+    st.caption(f"👤 Logged in as: **{current_user.title()}**")
+    if st.button("Log Out"):
+        st.session_state.authenticated = False
+        st.session_state.current_user = None
+        st.rerun()
+# =================================================================
+# YOUR ORIGINAL LOGIC STARTS HERE (UNTOUCHED)
+# =================================================================
 
 def load_secure_database():
     default_db = {
@@ -32,9 +87,7 @@ def save_secure_database(db_data):
     except:
         return False
 
-st.set_page_config(page_title="Next Elmsall Automated Ledger", layout="wide")
 st.title("📦 Next Elmsall - Annual Performance Ledger")
-
 
 # -----------------------------------------------------------------
 # 1. AMV DATABASE INDEX
@@ -89,14 +142,12 @@ if "annual_database" not in st.session_state:
 
 if "live_stages" not in st.session_state:
     st.session_state.live_stages = [{"role": "Soft Furnishings (1 Man)", "sh": "06", "sm": "00", "eh": "18", "em": "00", "vol": 0}]
-# -----------------------------------------------------------------
+
 # -----------------------------------------------------------------
 # 3. WORKSPACE WEEK CONTROLLER & TABS SPLIT
 # -----------------------------------------------------------------
-# Set up the split layout tab views first
 tab1, tab2 = st.tabs(["📝 Live Work Tracker", "🗄️ Saved & Logged Weeks Archive"])
 
-# Calculate a fallback dynamic week for default indexing
 today_date = datetime.now()
 retail_year_start = datetime(today_date.year, 2, 1)
 if today_date < retail_year_start:
@@ -108,7 +159,6 @@ auto_week = max(1, min(53, (days_elapsed // 7) + 1))
 # TAB 1: LIVE WORK TRACKER WORKSPACE
 # -----------------------------------------------------------------
 with tab1:
-    # Clean manual dropdown directly at the top of your workspace page
     live_current_week = st.selectbox(
         "🗂️ Select Workspace Target Week", 
         list(range(1, 54)), 
